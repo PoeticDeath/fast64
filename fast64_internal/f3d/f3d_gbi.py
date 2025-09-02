@@ -172,7 +172,7 @@ def optimize(b):
                             if len(r) < 3:
                                 break
                             if r[e] not in new:
-                                new[r[e]] = verts[r[e]][:-1] + [verts[r[0]][-1]]
+                                new[r[e]] = verts[r[e]]
                                 break
                         else:
                             return b
@@ -197,10 +197,7 @@ def optimize(b):
                             f = j[:h1 + 1]
                             for q in enumerate(tris[k]):
                                 for vv in enumerate(a):
-                                    if vv[1][0] == verts[q[1]][0]:
-                                        if q[0] == 0:
-                                            if vv[1][-1] != verts[q[1]][-1]:
-                                                continue
+                                    if vv[1] == verts[q[1]]:
                                         f += str(vv[0]) + ", "
                                         break
                                 else:
@@ -209,10 +206,7 @@ def optimize(b):
                                 f += "0, "
                                 for q in enumerate(tris[k + 1]):
                                     for vv in enumerate(a):
-                                        if vv[1][0] == verts[q[1]][0]:
-                                            if q[0] == 0:
-                                                if vv[1][-1] != verts[q[1]][-1]:
-                                                    continue
+                                        if vv[1] == verts[q[1]]:
                                             f += str(vv[0]) + ", "
                                             break
                                     else:
