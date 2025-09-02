@@ -197,7 +197,7 @@ def optimize(b):
                             f = j[:h1 + 1]
                             for q in enumerate(tris[k]):
                                 for vv in enumerate(a):
-                                    if vv[1] == verts[q[1]]:
+                                    if vv[1][:-1] == verts[q[1]][:-1]:
                                         f += str(vv[0]) + ", "
                                         break
                                 else:
@@ -206,7 +206,7 @@ def optimize(b):
                                 f += "0, "
                                 for q in enumerate(tris[k + 1]):
                                     for vv in enumerate(a):
-                                        if vv[1] == verts[q[1]]:
+                                        if vv[1][:-1] == verts[q[1]][:-1]:
                                             f += str(vv[0]) + ", "
                                             break
                                     else:
