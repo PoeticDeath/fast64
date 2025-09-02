@@ -133,6 +133,104 @@ ACMUXDict = {
 }
 
 
+def optimize(b):
+    try:
+        c = b.split("\n\n")
+        d = dict()
+        stringlist = []
+        for i in c:
+            t = i.split("\n")
+            if "_" in t[0]:
+                o = t[0].rfind("[")
+                f = t[0].rfind("_") + 1
+                if t[0][f - 5:f] == "_vtx_":
+                    if "cull" not in t[0][f:o]:
+                        d[int(t[0][f:o])] = i
+                    else:
+                        stringlist += [i]
+                if t[0][f - 5:f] == "_tri_":
+                    tris = []
+                    for p in t[2:-2]:
+                        p = p.split(",")
+                        try:
+                            firsttri = [int(p[0][p[0].find("(") + 1:]), int(p[1]), int(p[2])]
+                            try:
+                                sectri = [int(p[4]), int(p[5]), int(p[6])]
+                            except ValueError:
+                                sectri = []
+                        except ValueError:
+                            firsttri = [",".join(p)]
+                            sectri = []
+                        tris += [firsttri, sectri]
+                    u = d[int(t[0][f:o])].split("\n")
+                    verts = []
+                    for y in u[1:-1]:
+                        verts += [eval(y[:-1].replace("{", "[").replace("}", "]"))[0]]
+                    new = dict()
+                    for r in tris:
+                        for e in range(3):
+                            if len(r) < 3:
+                                break
+                            if r[e] not in new:
+                                new[r[e]] = verts[r[e]][:-1] + [verts[r[0]][-1]]
+                                break
+                        else:
+                            return b
+                    a = []
+                    for x in new:
+                        a += [new[x]]
+                    stab = u[0].find("[")
+                    endb = u[0].find("]")
+                    newvtx = [u[0][:stab + 1] + str(len(new)) + u[0][endb:]]
+                    for m in a:
+                        newvtx += ["\t{{ " + str(m)[1:-1].replace("[", "{").replace("]", "}") + " }},"]
+                    newvtx += u[-1:]
+                    stringlist += ["\n".join(newvtx)]
+                    l = t[1].split(",")
+                    l[1] = " " + str(len(new))
+                    newgtx = [t[0], ",".join(l)]
+                    for k in range(0, len(tris), 2):
+                        j = t[2 + k // 2]
+                        h1 = j.find("(")
+                        h2 = j.find(")")
+                        if len(tris[k]) == 3:
+                            f = j[:h1 + 1]
+                            for q in enumerate(tris[k]):
+                                for vv in enumerate(a):
+                                    if vv[1][0] == verts[q[1]][0]:
+                                        if q[0] == 0:
+                                            if vv[1][-1] != verts[q[1]][-1]:
+                                                continue
+                                        f += str(vv[0]) + ", "
+                                        break
+                                else:
+                                    return b
+                            if len(tris[k + 1]):
+                                f += "0, "
+                                for q in enumerate(tris[k + 1]):
+                                    for vv in enumerate(a):
+                                        if vv[1][0] == verts[q[1]][0]:
+                                            if q[0] == 0:
+                                                if vv[1][-1] != verts[q[1]][-1]:
+                                                    continue
+                                            f += str(vv[0]) + ", "
+                                            break
+                                    else:
+                                        return b
+                            f += "0"
+                            f += j[h2:]
+                        else:
+                            f = j
+                        newgtx += [f]
+                    newgtx += [t[-2], t[-1]]
+                    stringlist += ["\n".join(newgtx)]
+            else:
+                stringlist += [i]
+        return "\n\n".join(stringlist)
+    except Exception as e:
+        return b
+
+
 def isUcodeF3DEX1(F3D_VER: str) -> bool:
     return F3D_VER in {"F3DLP.Rej", "F3DLX.Rej", "F3DEX/LX"}
 
@@ -2670,6 +2768,7 @@ class FModel:
 
         for name, mesh in self.meshes.items():
             meshStatic, meshDynamic = mesh.to_c(self.f3d, gfxFormatter)
+			meshStatic.source = optimize(meshStatic.source)
             staticData.append(meshStatic)
             dynamicData.append(meshDynamic)
 
