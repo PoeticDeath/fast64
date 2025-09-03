@@ -171,18 +171,15 @@ def optimize(b):
                         for e in range(3):
                             if len(r) < 3:
                                 break
-                            if r[e] not in new:
+                            if verts[r[e]] not in new.values():
                                 new[r[e]] = verts[r[e]]
                                 break
                         else:
                             return b
-                    a = []
-                    for x in new:
-                        a += [new[x]]
                     stab = u[0].find("[")
                     endb = u[0].find("]")
                     newvtx = [u[0][:stab + 1] + str(len(new)) + u[0][endb:]]
-                    for m in a:
+                    for m in new.values():
                         newvtx += ["\t{{ " + str(m)[1:-1].replace("[", "{").replace("]", "}") + " }},"]
                     newvtx += u[-1:]
                     stringlist += ["\n".join(newvtx)]
@@ -195,23 +192,47 @@ def optimize(b):
                         h2 = j.find(")")
                         if len(tris[k]) == 3:
                             f = j[:h1 + 1]
+                            offset = 0
+                            offsetlock = False
                             for q in enumerate(tris[k]):
-                                for vv in enumerate(a):
-                                    if vv[1][:-1] == verts[q[1]][:-1]:
+                                bak = False
+                                for vv in enumerate(new.values()):
+                                    if vv[1] == verts[q[1]]:
                                         f += str(vv[0]) + ", "
                                         break
+                                    elif vv[1][:-1] == verts[q[1]][:-1]:
+                                        bak = vv
                                 else:
-                                    return b
-                            if len(tris[k + 1]):
-                                f += "0, "
-                                for q in enumerate(tris[k + 1]):
-                                    for vv in enumerate(a):
-                                        if vv[1][:-1] == verts[q[1]][:-1]:
-                                            f += str(vv[0]) + ", "
-                                            break
+                                    if bak:
+                                        f += str(bak[0]) + ", "
                                     else:
                                         return b
-                            f += "0"
+                                if vv[1][-1] != verts[q[1]][-1] and not offsetlock and offset < 2:
+                                    offset += 1
+                                elif not offsetlock and offset < 2:
+                                    offsetlock = True
+                            if len(tris[k + 1]):
+                                f += f"{offset}, "
+                                offset = 0
+                                offsetlock = False
+                                for q in enumerate(tris[k + 1]):
+                                    bak = False
+                                    for vv in enumerate(new.values()):
+                                        if vv[1] == verts[q[1]]:
+                                            f += str(vv[0]) + ", "
+                                            break
+                                        elif vv[1][:-1] == verts[q[1]][:-1]:
+                                            bak = vv
+                                    else:
+                                        if bak:
+                                            f += str(bak[0]) + ", "
+                                        else:
+                                            return b
+                                    if vv[1][-1] != verts[q[1]][-1] and not offsetlock and offset < 2:
+                                        offset += 1
+                                    elif not offsetlock and offset < 2:
+                                        offsetlock = True
+                            f += f"{offset}"
                             f += j[h2:]
                         else:
                             f = j
