@@ -167,12 +167,17 @@ def optimize(b):
                     for y in u[1:-1]:
                         verts += [eval(y[:-1].replace("{", "[").replace("}", "]"))[0]]
                     new = dict()
+                    off = 0
                     for r in tris:
                         for e in range(3):
                             if len(r) < 3:
+                                if len(r) == 1:
+                                    tmp = r[0].split(",")[0]
+                                    toff = tmp.rfind("+")
+                                    off = int(tmp[toff + 2:])
                                 break
-                            if verts[r[e]] not in new.values():
-                                new[r[e]] = verts[r[e]]
+                            if verts[r[e] + off] not in new.values():
+                                new[r[e] + off] = verts[r[e] + off]
                                 break
                         else:
                             return b
@@ -184,8 +189,10 @@ def optimize(b):
                     newvtx += u[-1:]
                     stringlist += ["\n".join(newvtx)]
                     l = t[1].split(",")
-                    l[1] = " " + str(len(new))
+                    l[1] = " " + str(min(len(new), int(l[1][1:])))
+                    loaded = int(l[1][1:])
                     newgtx = [t[0], ",".join(l)]
+                    start = 0
                     for k in range(0, len(tris), 2):
                         j = t[2 + k // 2]
                         h1 = j.find("(")
@@ -194,20 +201,20 @@ def optimize(b):
                             f = j[:h1 + 1]
                             offset = 0
                             offsetlock = False
-                            for q in enumerate(tris[k]):
+                            for q in tris[k]:
                                 bak = False
                                 for vv in enumerate(new.values()):
-                                    if vv[1] == verts[q[1]]:
+                                    if vv[1] == verts[q + start]:
                                         f += str(vv[0]) + ", "
                                         break
-                                    elif vv[1][:-1] == verts[q[1]][:-1]:
+                                    elif vv[1][:-1] == verts[q + start][:-1]:
                                         bak = vv
                                 else:
                                     if bak:
                                         f += str(bak[0]) + ", "
                                     else:
                                         return b
-                                if vv[1][-1] != verts[q[1]][-1] and not offsetlock and offset < 2:
+                                if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
                                     offset += 1
                                 elif not offsetlock and offset < 2:
                                     offsetlock = True
@@ -215,20 +222,20 @@ def optimize(b):
                                 f += f"{offset}, "
                                 offset = 0
                                 offsetlock = False
-                                for q in enumerate(tris[k + 1]):
+                                for q in tris[k + 1]:
                                     bak = False
                                     for vv in enumerate(new.values()):
-                                        if vv[1] == verts[q[1]]:
+                                        if vv[1] == verts[q + start]:
                                             f += str(vv[0]) + ", "
                                             break
-                                        elif vv[1][:-1] == verts[q[1]][:-1]:
+                                        elif vv[1][:-1] == verts[q + start][:-1]:
                                             bak = vv
                                     else:
                                         if bak:
                                             f += str(bak[0]) + ", "
                                         else:
                                             return b
-                                    if vv[1][-1] != verts[q[1]][-1] and not offsetlock and offset < 2:
+                                    if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
                                         offset += 1
                                     elif not offsetlock and offset < 2:
                                         offsetlock = True
@@ -236,6 +243,7 @@ def optimize(b):
                             f += j[h2:]
                         else:
                             f = j
+                            start += loaded
                         newgtx += [f]
                     newgtx += [t[-2], t[-1]]
                     stringlist += ["\n".join(newgtx)]
