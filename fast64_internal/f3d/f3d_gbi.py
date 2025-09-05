@@ -181,6 +181,65 @@ def optimize(b):
                                 break
                         else:
                             return b
+                    l = t[1].split(",")
+                    l[1] = " " + str(min(len(new), int(l[1][1:])))
+                    loaded = int(l[1][1:])
+                    tmpnew = []
+                    start = 0
+                    for k in range(0, len(tris), 2):
+                        j = t[2 + k // 2]
+                        h1 = j.find("(")
+                        h2 = j.find(")")
+                        if len(tris[k]) == 3:
+                            offset = 0
+                            offsetlock = False
+                            for q in tris[k]:
+                                bak = False
+                                for vv in enumerate(new.values()):
+                                    if vv[1] == verts[q + start]:
+                                        tmpnew += [vv[0]]
+                                        break
+                                    elif vv[1][:-1] == verts[q + start][:-1]:
+                                        bak = vv
+                                else:
+                                    if bak:
+                                        tmpnew += [bak[0]]
+                                    else:
+                                        return b
+                                if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
+                                    offset += 1
+                                elif not offsetlock and offset < 2:
+                                    offsetlock = True
+                            if len(tris[k + 1]):
+                                offset = 0
+                                offsetlock = False
+                                for q in tris[k + 1]:
+                                    bak = False
+                                    for vv in enumerate(new.values()):
+                                        if vv[1] == verts[q + start]:
+                                            tmpnew += [vv[0]]
+                                            break
+                                        elif vv[1][:-1] == verts[q + start][:-1]:
+                                            bak = vv
+                                    else:
+                                        if bak:
+                                            tmpnew += [bak[0]]
+                                        else:
+                                            return b
+                                    if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
+                                        offset += 1
+                                    elif not offsetlock and offset < 2:
+                                        offsetlock = True
+                        else:
+                            start += loaded
+                    simptmpnew = []
+                    for m in tmpnew:
+                        if m not in simptmpnew:
+                            simptmpnew += [m]
+                    newnew = dict()
+                    for m in simptmpnew:
+                        newnew[list(new.keys())[m]] = list(new.values())[m]
+                    new = newnew
                     stab = u[0].find("[")
                     endb = u[0].find("]")
                     newvtx = [u[0][:stab + 1] + str(len(new)) + u[0][endb:]]
@@ -188,9 +247,6 @@ def optimize(b):
                         newvtx += ["\t{{ " + str(m)[1:-1].replace("[", "{").replace("]", "}") + " }},"]
                     newvtx += u[-1:]
                     stringlist += ["\n".join(newvtx)]
-                    l = t[1].split(",")
-                    l[1] = " " + str(min(len(new), int(l[1][1:])))
-                    loaded = int(l[1][1:])
                     newgtx = [t[0], ",".join(l)]
                     start = 0
                     for k in range(0, len(tris), 2):
