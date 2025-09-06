@@ -133,6 +133,21 @@ ACMUXDict = {
 }
 
 
+def ranges(l_set):
+    l_set = set(l_set)
+    rb_set = sorted(l_set - {i + 1 for i in l_set})
+    re_set = sorted(l_set - {i - 1 for i in l_set})
+    return [range(rb_set[i], re_set[i] + 1) for i in range(len(rb_set))]
+
+
+def cverts(tris):
+    tmp = []
+    for i in tris:
+        for o in i:
+            tmp += [o]
+    return list(set(tmp))
+
+
 def optimize(b):
     try:
         c = b.split("\n\n")
@@ -240,6 +255,70 @@ def optimize(b):
                     for m in simptmpnew:
                         newnew[list(new.keys())[m]] = list(new.values())[m]
                     new = newnew
+                    newtmp = []
+                    start = 0
+                    for k in range(0, len(tris), 2):
+                        j = t[2 + k // 2]
+                        h1 = j.find("(")
+                        h2 = j.find(")")
+                        if len(tris[k]) == 3:
+                            offset = 0
+                            offsetlock = False
+                            for q in tris[k]:
+                                bak = False
+                                for vv in enumerate(new.values()):
+                                    if vv[1] == verts[q + start]:
+                                        newtmp += [vv[0]]
+                                        break
+                                    elif vv[1][:-1] == verts[q + start][:-1]:
+                                        bak = vv
+                                else:
+                                    if bak:
+                                        newtmp += [bak[0]]
+                                    else:
+                                        return b
+                                if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
+                                    offset += 1
+                                elif not offsetlock and offset < 2:
+                                    offsetlock = True
+                            if len(tris[k + 1]):
+                                offset = 0
+                                offsetlock = False
+                                for q in tris[k + 1]:
+                                    bak = False
+                                    for vv in enumerate(new.values()):
+                                        if vv[1] == verts[q + start]:
+                                            newtmp += [vv[0]]
+                                            break
+                                        elif vv[1][:-1] == verts[q + start][:-1]:
+                                            bak = vv
+                                    else:
+                                        if bak:
+                                            newtmp += [bak[0]]
+                                        else:
+                                            return b
+                                    if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
+                                        offset += 1
+                                    elif not offsetlock and offset < 2:
+                                        offsetlock = True
+                        else:
+                            start += loaded
+                    newtmptmp = []
+                    for m in range(0, len(newtmp), 3):
+                        newtmptmp += [newtmp[m:m + 3]]
+                    load = []
+                    triloads = []
+                    for m in newtmptmp:
+                        if len(cverts(load + [m])) > loaded:
+                            triloads += [load]
+                            load = [m]
+                        else:
+                            load += [m]
+                    if load not in triloads:
+                        triloads += [load]
+                    triranges = []
+                    for m in triloads:
+                        triranges += [ranges(cverts(m))]
                     stab = u[0].find("[")
                     endb = u[0].find("]")
                     newvtx = [u[0][:stab + 1] + str(len(new)) + u[0][endb:]]
@@ -247,9 +326,30 @@ def optimize(b):
                         newvtx += ["\t{{ " + str(m)[1:-1].replace("[", "{").replace("]", "}") + " }},"]
                     newvtx += u[-1:]
                     stringlist += ["\n".join(newvtx)]
-                    newgtx = [t[0], ",".join(l)]
+                    newgtx = [t[0]]
                     start = 0
+                    trisdrawn = 0
+                    trigroup = 0
+                    curgroupdone = False
+                    trilist = []
                     for k in range(0, len(tris), 2):
+                        if trisdrawn == len(triloads[trigroup]):
+                            curgroupdone = False
+                            trigroup += 1
+                            trisdrawn = 0
+                        if not curgroupdone:
+                            trisloaded = 0
+                            trilist = []
+                            for h in triranges[trigroup]:
+                                uu = l.copy()
+                                uu[0] = uu[0].replace("+ 0", f"+ {h[0]}")
+                                uu[1] = " " + str(len(h))
+                                uu[2] = " " + str(trisloaded) + ")"
+                                trisloaded += len(h)
+                                for m in h:
+                                    trilist += [m]
+                                newgtx += [",".join(uu)]
+                            curgroupdone = True
                         j = t[2 + k // 2]
                         h1 = j.find("(")
                         h2 = j.find(")")
@@ -261,19 +361,20 @@ def optimize(b):
                                 bak = False
                                 for vv in enumerate(new.values()):
                                     if vv[1] == verts[q + start]:
-                                        f += str(vv[0]) + ", "
+                                        f += str(trilist.index(vv[0])) + ", "
                                         break
                                     elif vv[1][:-1] == verts[q + start][:-1]:
                                         bak = vv
                                 else:
                                     if bak:
-                                        f += str(bak[0]) + ", "
+                                        f += str(trilist.index(bak[0])) + ", "
                                     else:
                                         return b
                                 if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
                                     offset += 1
                                 elif not offsetlock and offset < 2:
                                     offsetlock = True
+                            trisdrawn += 1
                             if len(tris[k + 1]):
                                 f += f"{offset}, "
                                 offset = 0
@@ -282,25 +383,27 @@ def optimize(b):
                                     bak = False
                                     for vv in enumerate(new.values()):
                                         if vv[1] == verts[q + start]:
-                                            f += str(vv[0]) + ", "
+                                            f += str(trilist.index(vv[0])) + ", "
                                             break
                                         elif vv[1][:-1] == verts[q + start][:-1]:
                                             bak = vv
                                     else:
                                         if bak:
-                                            f += str(bak[0]) + ", "
+                                            f += str(trilist.index(bak[0])) + ", "
                                         else:
                                             return b
                                     if vv[1][-1] != verts[q + start][-1] and not offsetlock and offset < 2:
                                         offset += 1
                                     elif not offsetlock and offset < 2:
                                         offsetlock = True
+                                trisdrawn += 1
                             f += f"{offset}"
                             f += j[h2:]
                         else:
-                            f = j
+                            f = ""
                             start += loaded
-                        newgtx += [f]
+                        if f != "":
+                            newgtx += [f]
                     newgtx += [t[-2], t[-1]]
                     stringlist += ["\n".join(newgtx)]
             else:
